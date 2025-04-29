@@ -21,6 +21,8 @@ SAMEORIGIN = 'SAMEORIGIN'
 ALLOW_FROM = 'ALLOW-FROM'
 ONE_YEAR_IN_SECS = 31556926
 
+DEFAULT_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
+DEFAULT_CROSS_ORIGIN_EMBEDDER_POLICY = 'require-corp'
 DEFAULT_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
 DEFAULT_CSP_POLICY = {
@@ -92,7 +94,10 @@ class Talisman(object):
             session_cookie_http_only=True,
             session_cookie_samesite=DEFAULT_SESSION_COOKIE_SAMESITE,
             x_content_type_options=True,
-            x_xss_protection=False):
+            x_xss_protection=False
+            x_origin_opener_policy=DEFAULT_CROSS_ORIGIN_OPENER_POLICY,
+            x_origin_embedder_policy=DEFAULT_CROSS_ORIGIN_EMBEDDER_POLICY,
+    ):
         """
         Initialization.
 
@@ -140,6 +145,12 @@ class Talisman(object):
             x_content_type_options: Prevents MIME type sniffing
             x_xss_protection: Prevents the page from loading when the browser
                 detects reflected cross-site scripting attacks
+            x_origin_opener_policy: Controls whether a new top-level document, 
+                opened using Window.open() or by navigating to a new page, is 
+                opened in the same browsing context group (BCG) or in a new 
+                browsing context group.
+            x_origin_embedder_policy: Configures the current document's policy
+                for loading and embedding cross-origin resources
 
         See README.rst for a detailed description of each option.
         """
@@ -206,6 +217,10 @@ class Talisman(object):
         self.x_content_type_options = x_content_type_options
 
         self.x_xss_protection = x_xss_protection
+
+        self.x_origin_opener_policy = x_origin_opener_policy
+
+        self.x_origin_embedder_policy = x_origin_embedder_policy
 
         self.app = app
 
@@ -275,6 +290,7 @@ class Talisman(object):
         self._set_content_security_policy_headers(response.headers, options)
         self._set_hsts_headers(response.headers)
         self._set_referrer_policy_headers(response.headers)
+        self._set_x_origin_policy_headers(response.headers)
         return response
 
     def _make_nonce(self):
@@ -412,6 +428,10 @@ class Talisman(object):
 
     def _set_referrer_policy_headers(self, headers):
         headers['Referrer-Policy'] = self.referrer_policy
+
+    def _set_x_origin_policy_headers(self, headers):
+        headers['Cross-Origin-Opener-Policy'] = self.x_origin_opener_policy
+        headers['Cross-Origin-Embedder-Policy'] = self.x_origin_embedder_policy
 
     def __call__(self, **kwargs):
         """Use talisman as a decorator to configure options for a particular
